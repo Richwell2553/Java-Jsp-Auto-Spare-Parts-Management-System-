@@ -1,0 +1,151 @@
+CREATE TABLE users(
+	id SERIAL PRIMARY KEY,
+	username VARCHAR(50),
+	password VARCHAR,
+	role VARCHAR(15)
+)  
+
+CREATE TABLE users(
+	id SERIAL PRIMARY KEY,
+	fullname VARCHAR(50),
+	email VARCHAR(50),
+	password VARCHAR,
+	role VARCHAR(15)
+) 
+
+
+
+
+create table sales(
+-- id SERIAL PRIMARY KEY,
+-- name TEXT NOT NULL,
+-- 	sales_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+-- );
+
+-- INSERT INTO sales(name) values('book');
+select id,name,to_char(sales_date,'YYYY-MM-DD HH12:MI:SS AM') as sales_date from sales;
+
+CREATE TABLE categories(
+	id SERIAL PRIMARY KEY,
+	category_name TEXT NOT NULL
+
+)
+INSERT INTO categories(category_name)
+values('Engine'),
+('Braking'),('Suspension and Steering'),('Electrical'),
+('Transmission and Drivetrain'),('Body and Interior');
+CREATE TABLE products(
+	prod_id SERIAL PRIMARY KEY,
+	prod_name VARCHAR(50),
+	prod_category VARCHAR(50),
+	prod_cost DECIMAL,
+	quantity_available INTEGER
+
+)
+CREATE TABLE products(
+	prod_id SERIAL PRIMARY KEY,
+	prod_name VARCHAR(255),
+	prod_category VARCHAR(255),
+	prod_cost DECIMAL(10,2),
+	quantity_available INT,
+	quantity_sold INT DEFAULT 0,
+	total_quantity INTEGER generated always as (quantity_available + quantity_sold) STORED ,
+	total_worth DECIMAL(10,2) generated always as ( (quantity_available + quantity_sold) * prod_cost) STORED
+
+)
+CREATE TABLE sales(
+	sales_id SERIAL PRIMARY KEY,
+	prod_name VARCHAR(50),
+	prod_category VARCHAR(50),
+	quantity_sold INTEGER,
+	prod_price DECIMAL(10,2),
+	total_cost DECIMAL(10,2) generated always as (quantity_sold * prod_price) STORED,
+	sales_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+)
+
+TRIGGER
+ CREATE TRIGGER update_products AFTER INSERT ON sales
+FOR EACH ROW execute Procedure updateproductslog();
+
+CREATE or replace FUNCTION updateproductslog() RETURNS trigger AS $update_products$
+BEGIN
+    UPDATE products
+	SET quantity_available = quantity_available - NEW.quantity_sold,
+	quantity_sold = quantity_sold + NEW.quantity_sold
+	WHERE prod_name = NEW.prod_name AND prod_cost =NEW.prod_price;
+	RETURN NEW;
+	END;
+	$update_products$ LANGUAGE plpgsql;
+CREATE TRIGGER product_insert AFTER INSERT ON product
+-- FOR EACH ROW execute Procedure insertlog();
+--  CREATE or replace FUNCTION insertlog() RETURNS trigger AS $product_insert$
+-- BEGIN
+--     INSERT INTO log(message) VALUES(CONCAT('Inserted a new product ''',NEW.prod_name,''' Quantity: ''',NEW.quantity_available,''' Category: ''',NEW.prod_category,'''.'));
+-- 	RETURN NEW;
+-- 	END;
+-- 	$product_insert$ LANGUAGE plpgsql;
+-- CREATE TRIGGER product_deleted BEFORE DELETE ON product
+-- FOR EACH ROW execute Procedure deletelog();
+--  CREATE or replace FUNCTION deletelog() RETURNS trigger AS $product_delete$
+-- BEGIN
+--     INSERT INTO log(message) VALUES(CONCAT('Deleted a product ''',OLD.prod_name,''' Quantity: ''',OLD.quantity_available,''' Category: ''',OLD.prod_category,'''.'));
+-- 	RETURN NEW;
+-- 	END;
+-- 	$product_delete$ LANGUAGE plpgsql;
+-- delete from product where prod_id =1;
+ACTIVITY LOG
+CREATE TABLE activitylog(
+ 	activity_id SERIAL PRIMARY KEY,
+	 activity_message TEXT,
+	 activity_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+ )
+prodcts trigger and function
+deleted
+ CREATE TRIGGER product_deleted BEFORE DELETE ON products
+FOR EACH ROW execute Procedure deletelog();
+ CREATE or replace FUNCTION deletelog() RETURNS trigger AS $product_deleted$
+BEGIN
+    INSERT INTO log(activity_message) VALUES(CONCAT('Deleted a product: ''',OLD.prod_name,''' Quantity: ''',OLD.quantity_available,''' Category: ''',OLD.prod_category,'''.'));
+	RETURN NEW;
+	END;
+	$product_deleted$ LANGUAGE plpgsql;
+insert
+CREATE TRIGGER product_inserted AFTER INSERT ON products
+FOR EACH ROW execute Procedure insertlog();
+ CREATE or replace FUNCTION insertlog() RETURNS trigger AS $product_inserted$
+BEGIN
+    INSERT INTO activitylog(activity_message) VALUES(CONCAT('Inserted a new product: ''',NEW.prod_name,''' Quantity: ''',NEW.quantity_available,''' Category: ''',NEW.prod_category,'''Price: ''',NEW.prod_cost,'''.'));
+	RETURN NEW;
+	END;
+	$product_inserted$ LANGUAGE plpgsql;
+updated
+CREATE TRIGGER product_updated AFTER UPDATE ON products
+FOR EACH ROW execute Procedure updatelog();
+ CREATE or replace FUNCTION updatelog() RETURNS trigger AS $product_updated$
+BEGIN
+    INSERT INTO activitylog(activity_message) VALUES(CONCAT('Updated a  product: ''',OLD.prod_name,''' Quantity: ''',OLD.quantity_available, ''' to ''', NEW.quantity_available,''' Category: ''',OLD.prod_category,''' Price: ''',OLD.prod_cost ,''' to ''',NEW.prod_cost,'''.'));
+	RETURN NEW;
+	END;
+	$product_updated$ LANGUAGE plpgsql;
+	
+
+	
+	password harshing
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash CHAR(60) NOT NULL
+);
+
+INSERT INTO users (username, password_hash)
+VALUES ('myusername', crypt('mypassword', gen_salt('bf')));
+
+
+
+
+
+
+
